@@ -7,8 +7,17 @@ import {
   S3Client,
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
+import {
+    DynamoDBClient,
+    PutItemCommand,
+    PutItemCommandInput,
+  } from "@aws-sdk/client-dynamodb";
+  
 
 const s3 = new S3Client();
+const dynamo = new DynamoDBClient();
+
+const TABLE_NAME = process.env.TABLE_NAME!;
 
 export const handler: SQSHandler = async (event) => {
   console.log("Event ", JSON.stringify(event));
@@ -31,6 +40,17 @@ export const handler: SQSHandler = async (event) => {
             Key: srcKey,
           };
           origimage = await s3.send(new GetObjectCommand(params));
+
+          // Write entry to DynamoDB
+          const putParams: PutItemCommandInput = {
+            TableName: TABLE_NAME,
+            Item: {
+              id: { S: srcKey }, 
+            },
+          };
+
+          await dynamo.send(new PutItemCommand(putParams));
+
           // Process the image 
         } catch (error) {
           console.log(error);

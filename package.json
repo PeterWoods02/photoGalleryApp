@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@aws-cdk/aws-lambda-nodejs": "^1.203.0",
+    "@aws-sdk/client-dynamodb": "^3.788.0",
     "@aws-sdk/client-s3": "^3.787.0",
     "aws-cdk-lib": "^2.176.0",
     "constructs": "^10.4.2",

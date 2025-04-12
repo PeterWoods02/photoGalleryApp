@@ -47,8 +47,10 @@ export class PhotoGalleryAppStack extends cdk.Stack {
         entry: `${__dirname}/../lambdas/processPhoto.ts`,
         timeout: cdk.Duration.seconds(15),
         memorySize: 128,
-      }
-    );
+        environment: {
+          TABLE_NAME: photoDataTable.tableName,
+        },
+      });
 
     // S3 --> SNS
     photosBucket.addEventNotification(
@@ -73,6 +75,9 @@ export class PhotoGalleryAppStack extends cdk.Stack {
 
     // Permissions
     photosBucket.grantRead(processPhotoFn);
+
+    photoDataTable.grantWriteData(processPhotoFn);
+
 
     // Outputs
 
