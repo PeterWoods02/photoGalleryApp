@@ -52,6 +52,19 @@ export class PhotoGalleryAppStack extends cdk.Stack {
         },
       });
 
+      const addMetadataFn = new lambdanode.NodejsFunction(
+        this,
+         "AddMetadataFunction",
+        {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/addMetadata.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: photoDataTable.tableName,
+        },
+      });
+
     // S3 --> SNS
     photosBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
@@ -69,14 +82,32 @@ export class PhotoGalleryAppStack extends cdk.Stack {
 
     // Subs 
 
-     photoEventsTopic.addSubscription(
-      new subs.SqsSubscription(photoProcessQueue)
+    photoEventsTopic.addSubscription(
+      new subs.SqsSubscription(photoProcessQueue, {
+        rawMessageDelivery: true,
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ['none']
+          }),
+        },
+      })
+    );
+
+    photoEventsTopic.addSubscription(
+      new subs.LambdaSubscription(addMetadataFn, {
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ['Caption', 'Date', 'name']
+          }),
+        },
+      })
     );
 
     // Permissions
     photosBucket.grantRead(processPhotoFn);
 
     photoDataTable.grantWriteData(processPhotoFn);
+    photoDataTable.grantWriteData(addMetadataFn);
 
 
     // Outputs
