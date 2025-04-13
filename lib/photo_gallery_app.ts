@@ -9,6 +9,7 @@ import * as events from "aws-cdk-lib/aws-lambda-event-sources";
 import * as lambdanode from "aws-cdk-lib/aws-lambda-nodejs";
 import * as lambda from "aws-cdk-lib/aws-lambda";
 import * as s3n from "aws-cdk-lib/aws-s3-notifications";
+import * as iam from "aws-cdk-lib/aws-iam";
 
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
@@ -26,6 +27,7 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     const photoDataTable = new dynamodb.Table(this, "photoDataTable", {
       partitionKey: { name: "id", type: dynamodb.AttributeType.STRING },
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      stream: dynamodb.StreamViewType.NEW_IMAGE,
     });
 
     // Integration infrastructure
@@ -74,6 +76,13 @@ export class PhotoGalleryAppStack extends cdk.Stack {
           TABLE_NAME: photoDataTable.tableName,
         },
       });
+
+      const mailerFn = new lambdanode.NodejsFunction(this, "mailer-function", {
+        runtime: lambda.Runtime.NODEJS_16_X,
+        memorySize: 1024,
+        timeout: cdk.Duration.seconds(3),
+        entry: `${__dirname}/../lambdas/mailer.ts`,
+      });
       
 
     // S3 --> SNS
@@ -89,6 +98,11 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     });
   
     processPhotoFn.addEventSource(newPhotoEventSource);
+
+    mailerFn.addEventSource(new events.DynamoEventSource(photoDataTable, {
+      startingPosition: lambda.StartingPosition.LATEST,
+      batchSize: 5,
+    }));
   
 
     // Subs 
@@ -124,7 +138,19 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     photoDataTable.grantWriteData(processPhotoFn);
     photoDataTable.grantWriteData(addMetadataFn);
     photoDataTable.grantWriteData(updateStatusFn);
+    photoDataTable.grantStreamRead(mailerFn);
 
+    mailerFn.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          "ses:SendEmail",
+          "ses:SendRawEmail",
+          "ses:SendTemplatedEmail",
+        ],
+        resources: ["*"],
+      })
+    );
 
 
     // Outputs
