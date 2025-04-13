@@ -1,8 +1,14 @@
 {
-  "id": "image1.jpeg",
-  "date": "18/04/2025",
-  "update": {
-    "status": "Pass",
-    "reason": "Looks excellent"
-  }
+  "Records": [
+    {
+      "s3": {
+        "bucket": {
+          "name": "photogalleryappstack-photosfbe4f3ef-vhuhe7kyuwlp"
+        },
+        "object": {
+          "key": "sample.pdf"
+        }
+      }
+    }
+  ]
 }

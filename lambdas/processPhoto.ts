@@ -22,8 +22,7 @@ const TABLE_NAME = process.env.TABLE_NAME!;
 export const handler: SQSHandler = async (event) => {
   console.log("Event ", JSON.stringify(event));
   for (const record of event.Records) {
-    const recordBody = JSON.parse(record.body);       
-    const snsMessage = JSON.parse(recordBody.Message); 
+    const snsMessage = JSON.parse(record.body);
 
     if (snsMessage.Records) {
       console.log("Record body ", JSON.stringify(snsMessage));
@@ -34,6 +33,12 @@ export const handler: SQSHandler = async (event) => {
         const srcKey = decodeURIComponent(s3e.object.key.replace(/\+/g, " "));
         let origimage = null;
         try {
+          
+            if (!srcKey.endsWith(".jpeg") && !srcKey.endsWith(".png")) {
+              console.log(`Invalid file type for: ${srcKey}`);
+              throw new Error("Unsupported file type");
+            }
+            
           // Download the image from the S3 source bucket.
           const params: GetObjectCommandInput = {
             Bucket: srcBucket,
@@ -54,6 +59,7 @@ export const handler: SQSHandler = async (event) => {
           // Process the image 
         } catch (error) {
           console.log(error);
+          throw error;
         }
       }
     }

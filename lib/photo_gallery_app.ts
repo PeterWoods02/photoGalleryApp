@@ -31,8 +31,16 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     });
 
     // Integration infrastructure
+    const photoDLQ = new sqs.Queue(this, "photoDLQ", {
+      receiveMessageWaitTime: cdk.Duration.seconds(10),
+    });
+
     const photoProcessQueue = new sqs.Queue(this, "photoProcessQueue", {
       receiveMessageWaitTime: cdk.Duration.seconds(10),
+      deadLetterQueue: {
+        maxReceiveCount: 1,
+        queue: photoDLQ,
+      },
     });
 
     const photoEventsTopic = new sns.Topic(this, "PhotoEventsTopic", {
@@ -83,6 +91,15 @@ export class PhotoGalleryAppStack extends cdk.Stack {
         timeout: cdk.Duration.seconds(3),
         entry: `${__dirname}/../lambdas/mailer.ts`,
       });
+
+      const removePhotoFn = new lambdanode.NodejsFunction(this,
+         "RemovePhotoFunction",
+        {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/removePhoto.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+      });
       
 
     // S3 --> SNS
@@ -103,7 +120,12 @@ export class PhotoGalleryAppStack extends cdk.Stack {
       startingPosition: lambda.StartingPosition.LATEST,
       batchSize: 5,
     }));
-  
+    
+    removePhotoFn.addEventSource(new events.SqsEventSource(photoDLQ, {
+      batchSize: 5,
+      maxBatchingWindow: cdk.Duration.seconds(5),
+    }));
+    
 
     // Subs 
 
@@ -140,6 +162,7 @@ export class PhotoGalleryAppStack extends cdk.Stack {
 
     // Permissions
     photosBucket.grantRead(processPhotoFn);
+    photosBucket.grantDelete(removePhotoFn);
 
     photoDataTable.grantWriteData(processPhotoFn);
     photoDataTable.grantWriteData(addMetadataFn);
