@@ -65,6 +65,17 @@ export class PhotoGalleryAppStack extends cdk.Stack {
         },
       });
 
+      const updateStatusFn = new lambdanode.NodejsFunction(this, "UpdateStatusFunction", {
+        runtime: lambda.Runtime.NODEJS_22_X,
+        entry: `${__dirname}/../lambdas/updateStatus.ts`,
+        timeout: cdk.Duration.seconds(10),
+        memorySize: 128,
+        environment: {
+          TABLE_NAME: photoDataTable.tableName,
+        },
+      });
+      
+
     // S3 --> SNS
     photosBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
@@ -103,11 +114,17 @@ export class PhotoGalleryAppStack extends cdk.Stack {
       })
     );
 
+    photoEventsTopic.addSubscription(
+      new subs.LambdaSubscription(updateStatusFn)
+    );
+
     // Permissions
     photosBucket.grantRead(processPhotoFn);
 
     photoDataTable.grantWriteData(processPhotoFn);
     photoDataTable.grantWriteData(addMetadataFn);
+    photoDataTable.grantWriteData(updateStatusFn);
+
 
 
     // Outputs

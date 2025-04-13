@@ -1,5 +1,8 @@
 {
-    "id": "image3.jpeg",
-    "value": "World Cup Final"
+    "id": "image1.jpeg",
+    "date": "01/05/2025",
+    "update": {
+      "status": "Pass",
+      "reason": "Good quality"
+    }
   }
-  
