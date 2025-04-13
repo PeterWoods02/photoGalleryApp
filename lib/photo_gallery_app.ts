@@ -129,7 +129,13 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     );
 
     photoEventsTopic.addSubscription(
-      new subs.LambdaSubscription(updateStatusFn)
+      new subs.LambdaSubscription(updateStatusFn, {
+        filterPolicy: {
+          metadata_type: sns.SubscriptionFilter.stringFilter({
+            allowlist: ['status'],
+          }),
+        },
+      })
     );
 
     // Permissions
