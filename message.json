@@ -1,14 +1,4 @@
 {
-  "Records": [
-    {
-      "s3": {
-        "bucket": {
-          "name": "photogalleryappstack-photosfbe4f3ef-vhuhe7kyuwlp"
-        },
-        "object": {
-          "key": "sample.pdf"
-        }
-      }
-    }
-  ]
+  "id": "sunflower.jpeg",
+  "value": "Beautiful Yellow Flower"
 }

@@ -24,7 +24,12 @@ export const handler: SQSHandler = async (event) => {
   for (const record of event.Records) {
     const snsMessage = JSON.parse(record.body);
 
-    if (snsMessage.Records) {
+    // ignore non-S3 events
+    if (!snsMessage.Records || !snsMessage.Records[0].s3) {
+      console.log("Not an S3 event, skipping...");
+      continue;
+    }
+
       console.log("Record body ", JSON.stringify(snsMessage));
       for (const messageRecord of snsMessage.Records) {
         const s3e = messageRecord.s3;
@@ -62,6 +67,5 @@ export const handler: SQSHandler = async (event) => {
           throw error;
         }
       }
-    }
   }
 };

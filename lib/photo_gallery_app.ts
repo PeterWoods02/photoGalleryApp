@@ -132,11 +132,6 @@ export class PhotoGalleryAppStack extends cdk.Stack {
     photoEventsTopic.addSubscription(
       new subs.SqsSubscription(photoProcessQueue, {
         rawMessageDelivery: true,
-        filterPolicy: {
-          metadata_type: sns.SubscriptionFilter.stringFilter({
-            allowlist: ['none']
-          }),
-        },
       })
     );
 
